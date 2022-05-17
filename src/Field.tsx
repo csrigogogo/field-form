@@ -62,11 +62,11 @@ export interface InternalFieldProps<Values = any> {
    * When dependencies field update and current field is touched,
    * will trigger validate rules and render.
    */
-  dependencies?: NamePath[];
+  dependencies?: NamePath[]; // 抽象类规定实现
   getValueFromEvent?: (...args: EventArgs) => StoreValue;
-  name?: InternalNamePath;
+  name?: InternalNamePath; // 抽象类规定实现
   normalize?: (value: StoreValue, prevValue: StoreValue, allValues: Store) => StoreValue;
-  rules?: Rule[];
+  rules?: Rule[]; // 抽象类规定实现
   shouldUpdate?: ShouldUpdate<Values>;
   trigger?: string;
   validateTrigger?: string | string[] | false;
@@ -74,7 +74,7 @@ export interface InternalFieldProps<Values = any> {
   valuePropName?: string;
   getValueProps?: (value: StoreValue) => Record<string, unknown>;
   messageVariables?: Record<string, string>;
-  initialValue?: any;
+  initialValue?: any; // 抽象类规定实现
   onReset?: () => void;
   onMetaChange?: (meta: Meta & { destroy?: boolean }) => void;
   preserve?: boolean;
@@ -100,31 +100,33 @@ export interface FieldState {
 }
 
 // We use Class instead of Hooks here since it will cost much code by using Hooks.
+// Field组件 是 抽象类FieldEntity 的实现
 class Field extends React.Component<InternalFieldProps, FieldState> implements FieldEntity {
   public static contextType = FieldContext;
 
   public static defaultProps = {
     trigger: 'onChange',
     valuePropName: 'value',
-  };
+  }; // 默认属性  trigger onChange valuePropsName 'value'
+  // 特殊的 例如checkbox 需要进行修改
 
   public state = {
     resetCount: 0,
-  };
+  }; // TODO: 本地状态resetCount 干嘛的?   刷新组件的  通过调用SetState 刷新组件
 
   private cancelRegisterFunc: (
     isListField?: boolean,
     preserve?: boolean,
     namePath?: InternalNamePath,
-  ) => void | null = null;
+  ) => void | null = null; // TODO: 看起来像从Form进来的
 
-  private mounted = false;
+  private mounted = false; // 几个状态 
 
   /**
    * Follow state should not management in State since it will async update by React.
    * This makes first render of form can not get correct state value.
    */
-  private touched: boolean = false;
+  private touched: boolean = false; // 
 
   /**
    * Mark when touched & validated. Currently only used for `dependencies`.
@@ -137,14 +139,16 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
 
   private prevValidating: boolean;
 
-  private errors: string[] = EMPTY_ERRORS;
-  private warnings: string[] = EMPTY_ERRORS;
+  private errors: string[] = EMPTY_ERRORS; // 校验错误信息
+  private warnings: string[] = EMPTY_ERRORS; // 校验waring信息
 
   // ============================== Subscriptions ==============================
   constructor(props: InternalFieldProps) {
+    // 构造函数
     super(props);
 
-    // Register on init
+    // Register on init  如果props.fieldContext 存在 进行init操作 
+    // wrapperField 已经将外层的context 消费 并通过props 传递进来
     if (props.fieldContext) {
       const { getInternalHooks }: InternalFormInstance = props.fieldContext;
       const { initEntityValue } = getInternalHooks(HOOK_MARK);
@@ -153,25 +157,25 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
   }
 
   public componentDidMount() {
-    const { shouldUpdate, fieldContext } = this.props;
+    const { shouldUpdate, fieldContext } = this.props; 
 
-    this.mounted = true;
+    this.mounted = true; // 标志位 进行此处 mount true
 
     // Register on init
     if (fieldContext) {
       const { getInternalHooks }: InternalFormInstance = fieldContext;
       const { registerField } = getInternalHooks(HOOK_MARK);
-      this.cancelRegisterFunc = registerField(this);
+      this.cancelRegisterFunc = registerField(this); // 得到了cancelRegisterFuc 函数
     }
 
     // One more render for component in case fields not ready
     if (shouldUpdate === true) {
-      this.reRender();
+      this.reRender(); // 重新force渲染,如果Field还没mount 不执行
     }
   }
 
-  public componentWillUnmount() {
-    this.cancelRegister();
+  public componentWillUnmount() { // 组件删除时
+    this.cancelRegister(); // 
     this.triggerMetaEvent(true);
     this.mounted = false;
   }
@@ -180,7 +184,7 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     const { preserve, isListField, name } = this.props;
 
     if (this.cancelRegisterFunc) {
-      this.cancelRegisterFunc(isListField, preserve, getNamePath(name));
+      this.cancelRegisterFunc(isListField, preserve, getNamePath(name)); //TODO: 涉及到List Field  暂时不看
     }
     this.cancelRegisterFunc = null;
   };
@@ -189,15 +193,18 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
   public getNamePath = (): InternalNamePath => {
     const { name, fieldContext } = this.props;
     const { prefixName = [] }: InternalFormInstance = fieldContext;
-
+    // 获取 Field 路径 , name的类型 是可以解构的 
+    // export type InternalNamePath = (string | number)[];
     return name !== undefined ? [...prefixName, ...name] : [];
   };
 
   public getRules = (): RuleObject[] => {
     const { rules = [], fieldContext } = this.props;
-
+    // rules []
+    // type Rule = RuleConfig | ((form: FormInstance) => RuleConfig);
     return rules.map((rule: Rule): RuleObject => {
       if (typeof rule === 'function') {
+        // fieldContext 就是 formInstance
         return rule(fieldContext);
       }
       return rule;
@@ -205,12 +212,12 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
   };
 
   public reRender() {
-    if (!this.mounted) return;
+    if (!this.mounted) return; // Field ComponentDidMount 还没有执行 不执行forceUpdate
     this.forceUpdate();
   }
 
   public refresh = () => {
-    if (!this.mounted) return;
+    if (!this.mounted) return; // Field ComponentDidMount 还没有执行 不重新渲染组件
 
     /**
      * Clean up current node.
@@ -220,6 +227,7 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     }));
   };
 
+  // TODO: 
   public triggerMetaEvent = (destroy?: boolean) => {
     const { onMetaChange } = this.props;
 
@@ -228,8 +236,9 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
 
   // ========================= Field Entity Interfaces =========================
   // Trigger by store update. Check if need update the component
+  // onStoreChange 实现  
   public onStoreChange: FieldEntity['onStoreChange'] = (prevStore, namePathList, info) => {
-    const { shouldUpdate, dependencies = [], onReset } = this.props;
+    const { shouldUpdate, dependencies = [], onReset } = this.props; //
     const { store } = info;
     const namePath = this.getNamePath();
     const prevValue = this.getValue(prevStore);
@@ -353,16 +362,18 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     }
 
     if (shouldUpdate === true) {
+      // 兜底  shouldUpdate 为 true  只要Store 发生变化 Field组件就会重新刷新
       this.reRender();
     }
   };
 
   public validateRules = (options?: ValidateOptions): Promise<RuleError[]> => {
     // We should fixed namePath & value to avoid developer change then by form function
-    const namePath = this.getNamePath();
-    const currentValue = this.getValue();
+    const namePath = this.getNamePath(); // 字段路径
+    const currentValue = this.getValue(); // 当前 Field 值
 
     // Force change to async to avoid rule OOD under renderProps field
+    // TODO:  做了一个Promise.resolve()的操作  控制执行时机 renderProps
     const rootPromise = Promise.resolve().then(() => {
       if (!this.mounted) {
         return [];
@@ -640,6 +651,7 @@ function WrapperField<Values = any>({ name, ...restProps }: FieldProps<Values>) 
   ) {
     warning(false, '`preserve` should not apply on Form.List fields.');
   }
+  // fieldContext  显式 props 传递  因为Class组件的constructor 不能使用Context api
 
   return <Field key={key} name={namePath} {...restProps} fieldContext={fieldContext} />;
 }

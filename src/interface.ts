@@ -72,14 +72,18 @@ interface BaseRule {
   validateTrigger?: string | string[];
 }
 
-type AggregationRule = BaseRule & Partial<ValidatorRule>;
+type AggregationRule = BaseRule & Partial<ValidatorRule>; 
+// Partial 类型转换可选  https://www.typescriptlang.org/docs/handbook/utility-types.html
+// & 将多个类型合并为一个类型 交叉类型
 
 interface ArrayRule extends Omit<AggregationRule, 'type'> {
   type: 'array';
   defaultField?: RuleObject;
 }
+// Omit 从AggregationRule 中 去掉 'type' 这里相当于用 type: 'array' 替换掉了 类型 type?: RuleType;
+// https://www.typescriptlang.org/docs/handbook/utility-types.html#example-5
 
-export type RuleObject = AggregationRule | ArrayRule;
+export type RuleObject = AggregationRule | ArrayRule; // 联合类型 https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types
 
 export type Rule = RuleObject | RuleRender;
 
