@@ -969,20 +969,23 @@ export class FormStore {
 
 function useForm<Values = any>(form?: FormInstance<Values>): [FormInstance<Values>] {
   const formRef = React.useRef<FormInstance>();
-  const [, forceUpdate] = React.useState({});
-
+  const [, forceUpdate] = React.useState({}); // 自定义hook, 通过调用内部setState 重新刷新
+ 
   if (!formRef.current) {
     if (form) {
+      // 通常来说 使用useForm时 不传递参数 , 会走一遍FormStore的实例化流程
+      // 这一块逻辑在好像只会在 组件内部使用到 (因为外界会传递form实例进来 带参数)
       formRef.current = form;
     } else {
       // Create a new FormStore if not provided
+      //  
       const forceReRender = () => {
         forceUpdate({});
       };
-
+      
       const formStore: FormStore = new FormStore(forceReRender);
 
-      formRef.current = formStore.getForm();
+      formRef.current = formStore.getForm(); // 使用useForm 获取到的是 formStore.getForm() 的结果 即 formInstance
     }
   }
 

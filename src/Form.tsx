@@ -34,6 +34,7 @@ export interface FormProps<Values = any> extends BaseFormProps {
   preserve?: boolean;
 }
 
+// internalForm
 const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
   {
     name,
@@ -53,11 +54,11 @@ const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
   }: FormProps,
   ref,
 ) => {
-  const formContext: FormContextProps = React.useContext(FormContext);
+  const formContext: FormContextProps = React.useContext(FormContext); //? 这里使用到的FormContext 是一些函数的占位符, 没有具体执行的内容
 
   // We customize handle event since Context will makes all the consumer re-render:
   // https://reactjs.org/docs/context.html#contextprovider
-  const [formInstance] = useForm(form);
+  const [formInstance] = useForm(form); // 单例模式 将外界useForm 生成的 formInstance ,再次调用useForm 返回的内容是一样的
   const {
     useSubscribe,
     setInitialValues,
@@ -65,14 +66,14 @@ const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
     setValidateMessages,
     setPreserve,
     destroyForm,
-  } = (formInstance as InternalFormInstance).getInternalHooks(HOOK_MARK);
+  } = (formInstance as InternalFormInstance).getInternalHooks(HOOK_MARK); // 通过一个特殊标志位(symbol) 获取实例上的私有方法, 很好的隔离 私有方法 和 公共方法
 
   // Pass ref with form instance
-  React.useImperativeHandle(ref, () => formInstance);
+  React.useImperativeHandle(ref, () => formInstance); // 接收ref 暴漏formInstance
 
   // Register form into Context
   React.useEffect(() => {
-    formContext.registerForm(name, formInstance);
+    formContext.registerForm(name, formInstance); // ? 有效果么
     return () => {
       formContext.unregisterForm(name);
     };
@@ -82,7 +83,7 @@ const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
   setValidateMessages({
     ...formContext.validateMessages,
     ...validateMessages,
-  });
+  }); // 外界可以通过validateMessages自定义 校验的模板 
   setCallbacks({
     onValuesChange,
     onFieldsChange: (changedFields: FieldData[], ...rest) => {
@@ -104,7 +105,7 @@ const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
   setPreserve(preserve);
 
   // Set initial value, init store value when first mount
-  const mountRef = React.useRef(null);
+  const mountRef = React.useRef(null); 
   setInitialValues(initialValues, !mountRef.current);
   if (!mountRef.current) {
     mountRef.current = true;
@@ -118,7 +119,14 @@ const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
 
   // Prepare children by `children` type
   let childrenNode: React.ReactNode;
-  const childrenRenderProps = typeof children === 'function';
+  const childrenRenderProps = typeof children === 'function';  // 如果Form 的children 是 函数 暴露几个参数
+  // <Form>
+  //     {
+  //       (values, formInstance) => {
+  // 
+  //       }
+  //     }
+  // </Form>
   if (childrenRenderProps) {
     const values = formInstance.getFieldsValue(true);
     childrenNode = (children as RenderProps)(values, formInstance);
@@ -127,7 +135,7 @@ const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
   }
 
   // Not use subscribe when using render props
-  useSubscribe(!childrenRenderProps);
+  useSubscribe(!childrenRenderProps); // TODO: 什么用
 
   // Listen if fields provided. We use ref to save prev data here to avoid additional render
   const prevFieldsRef = React.useRef<FieldData[] | undefined>();
@@ -144,13 +152,16 @@ const Form: React.ForwardRefRenderFunction<FormInstance, FormProps> = (
       validateTrigger,
     }),
     [formInstance, validateTrigger],
-  );
+  ); 
 
   const wrapperNode = (
+    // FieldContext 承载了 formContextValue (formInstance + validateTrigger)  给子组件使用
     <FieldContext.Provider value={formContextValue}>{childrenNode}</FieldContext.Provider>
   );
 
   if (Component === false) {
+    // 使用者显式声明Component : false  
+    // TODO: 外层不在使用form 接管数据  主要是 submit onReset 函数 会受到影响么? 
     return wrapperNode;
   }
 

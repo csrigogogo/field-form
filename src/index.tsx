@@ -22,7 +22,7 @@ interface RefFormType extends InternalFormType {
   useWatch: typeof useWatch;
 }
 
-const RefForm: RefFormType = InternalForm as RefFormType;
+const RefForm: RefFormType = InternalForm as RefFormType; // 使用forWardForm 包装的 FieldForm , refs 转发到内部
 
 RefForm.FormProvider = FormProvider;
 RefForm.Field = Field;
