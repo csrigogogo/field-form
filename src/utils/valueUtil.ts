@@ -120,6 +120,7 @@ export function isSimilar(source: SimilarObject, target: SimilarObject) {
 }
 
 export function defaultGetValueFromEvent(valuePropName: string, ...args: EventArgs) {
+  // 如果外界不定义getValueFromEvent 函数  , 调用此函数
   const event = args[0];
   if (event && event.target && typeof event.target === 'object' && valuePropName in event.target) {
     return (event.target as HTMLInputElement)[valuePropName];

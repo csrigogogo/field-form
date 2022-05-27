@@ -107,7 +107,8 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
   public static defaultProps = {
     trigger: 'onChange',
     valuePropName: 'value',
-  }; // 默认属性  trigger onChange valuePropsName 'value'
+  }; // 默认属性  trigger onChange valuePropsName 'value' 
+  //  Class 组件的 defaultProps 可以从this.props中获取
   // 特殊的 例如checkbox 需要进行修改
 
   public state = {
@@ -230,7 +231,9 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
   // TODO: 
   public triggerMetaEvent = (destroy?: boolean) => {
     const { onMetaChange } = this.props;
-
+    // TODO: 这个onMetaChange 目前看不出来什么作用  
+    // onMetaChange 通过Field 组件 的props 传入  , 从外界过来的  具体作用待研究
+    
     onMetaChange?.({ ...this.getMeta(), destroy });
   };
 
@@ -475,6 +478,7 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
 
   // ============================= Child Component =============================
   public getMeta = (): Meta => {
+    // meta 数据 关于Field的状态
     // Make error & validating in cache to save perf
     this.prevValidating = this.isFieldValidating();
 
@@ -523,12 +527,14 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
 
   public getControlled = (childProps: ChildProps = {}) => {
     const {
+      // 以下就是Field的props , 在Form.Item 的api 可以找到相关文档 
       trigger,
       validateTrigger,
       getValueFromEvent,
       normalize,
       valuePropName,
       getValueProps,
+      // context 内容  { formInstance, validateTrigger }
       fieldContext,
     } = this.props;
 
@@ -542,15 +548,16 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     const mergedGetValueProps = getValueProps || ((val: StoreValue) => ({ [valuePropName]: val }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const originTriggerFunc: any = childProps[trigger];
+    const originTriggerFunc: any = childProps[trigger]; // 默认childProps['onChange']
 
     const control = {
       ...childProps,
-      ...mergedGetValueProps(value),
+      ...mergedGetValueProps(value), //valuePropName 默认值 'value' , {value : xxx}
     };
 
     // Add trigger
     control[trigger] = (...args: EventArgs) => {
+      // 包装一下TriggerFunc(onChange)  执行之前 执行一些前置 内部逻辑 , 例如 设置一些meta状态
       // Mark as touched
       this.touched = true;
       this.dirty = true;
@@ -565,6 +572,8 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
       }
 
       if (normalize) {
+        // 组件获取值后进行转换，再放入 Form 中
+        // 为什么normalize 不可以是异步函数 https://ant.design/components/form-cn/#%E4%B8%BA%E4%BB%80%E4%B9%88-normalize-%E4%B8%8D%E8%83%BD%E6%98%AF%E5%BC%82%E6%AD%A5%E6%96%B9%E6%B3%95%EF%BC%9F
         newValue = normalize(newValue, value, getFieldsValue(true));
       }
 
@@ -614,6 +623,9 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     const { child, isFunction } = this.getOnlyChild(children);
 
     // Not need to `cloneElement` since user can handle this in render function self
+    // Field 子组件 几种形态
+    // 1. ReactElement 
+    // 2. function
     let returnChildNode: React.ReactNode;
     if (isFunction) {
       returnChildNode = child;
@@ -651,7 +663,7 @@ function WrapperField<Values = any>({ name, ...restProps }: FieldProps<Values>) 
   ) {
     warning(false, '`preserve` should not apply on Form.List fields.');
   }
-  // fieldContext  显式 props 传递  因为Class组件的constructor 不能使用Context api
+  // fieldContext  显式 props 传递  因为Class组件的 constructor 不能使用Context api
 
   return <Field key={key} name={namePath} {...restProps} fieldContext={fieldContext} />;
 }
