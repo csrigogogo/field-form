@@ -1,5 +1,5 @@
+import Form, { Field } from 'rc-field-form';
 import React from 'react';
-import Form, { Field, FormInstance } from 'rc-field-form';
 import Input from './components/Input';
 
 export default () => {
