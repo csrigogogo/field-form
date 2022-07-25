@@ -3,6 +3,7 @@
   "version": "1.27.1",
   "description": "React Form Component",
   "typings": "es/index.d.ts",
+  "packageManager": "yarn@1.22.19",
   "engines": {
     "node": ">=8.x"
   },

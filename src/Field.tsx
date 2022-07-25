@@ -233,7 +233,7 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     const { onMetaChange } = this.props;
     // TODO: 这个onMetaChange 目前看不出来什么作用  
     // onMetaChange 通过Field 组件 的props 传入  , 从外界过来的  具体作用待研究
-    
+    // 在Field 组件卸载的时候 调用triggerMetaEvent(true) 
     onMetaChange?.({ ...this.getMeta(), destroy });
   };
 
@@ -494,6 +494,10 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
   };
 
   // Only return validate child node. If invalidate, will do nothing about field.
+  // 获取唯一的child
+  // Field 的child 有几种
+  // 1. 函数child
+  // 2. 
   public getOnlyChild = (
     children:
       | React.ReactNode
@@ -508,7 +512,8 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
         isFunction: true,
       };
     }
-
+    // 如果不是函数
+    // 这里判断了 多个children的情况
     // Filed element only
     const childList = toChildrenArray(children);
     if (childList.length !== 1 || !React.isValidElement(childList[0])) {
@@ -524,7 +529,7 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     const namePath = this.getNamePath();
     return getValue(store || getFieldsValue(true), namePath);
   };
-
+  // 受控组件属性 
   public getControlled = (childProps: ChildProps = {}) => {
     const {
       // 以下就是Field的props , 在Form.Item 的api 可以找到相关文档 
@@ -541,10 +546,11 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     const mergedValidateTrigger =
       validateTrigger !== undefined ? validateTrigger : fieldContext.validateTrigger;
 
-    const namePath = this.getNamePath();
+    const namePath = this.getNamePath(); // 获取Field 路径
     const { getInternalHooks, getFieldsValue }: InternalFormInstance = fieldContext;
     const { dispatch } = getInternalHooks(HOOK_MARK);
     const value = this.getValue();
+    // 为子元素添加额外的属性 valuePropName 属于getValueProps 的封装
     const mergedGetValueProps = getValueProps || ((val: StoreValue) => ({ [valuePropName]: val }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -556,6 +562,7 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
     };
 
     // Add trigger
+    // 添加 onChange 函数  
     control[trigger] = (...args: EventArgs) => {
       // 包装一下TriggerFunc(onChange)  执行之前 执行一些前置 内部逻辑 , 例如 设置一些meta状态
       // Mark as touched
@@ -573,10 +580,11 @@ class Field extends React.Component<InternalFieldProps, FieldState> implements F
 
       if (normalize) {
         // 组件获取值后进行转换，再放入 Form 中
-        // 为什么normalize 不可以是异步函数 https://ant.design/components/form-cn/#%E4%B8%BA%E4%BB%80%E4%B9%88-normalize-%E4%B8%8D%E8%83%BD%E6%98%AF%E5%BC%82%E6%AD%A5%E6%96%B9%E6%B3%95%EF%BC%9F
+        // 为什么normalize 不可以是异步函数 
+        // https://ant.design/components/form-cn/#%E4%B8%BA%E4%BB%80%E4%B9%88-normalize-%E4%B8%8D%E8%83%BD%E6%98%AF%E5%BC%82%E6%AD%A5%E6%96%B9%E6%B3%95%EF%BC%9F
         newValue = normalize(newValue, value, getFieldsValue(true));
       }
-
+      // 触发form 实例的 fieldValue 更新
       dispatch({
         type: 'updateValue',
         namePath,
